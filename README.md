@@ -349,11 +349,6 @@ Contributions are welcome. Please follow these guidelines:
 4. Push to your fork
 5. Submit a pull request with description
 
----
-
-## License
-
-MIT License - see LICENSE file for details
 
 ---
 
