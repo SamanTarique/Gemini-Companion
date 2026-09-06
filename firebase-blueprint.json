@@ -1,0 +1,283 @@
+{
+  "entities": {
+    "JournalEntry": {
+      "title": "Journal Entry",
+      "description": "A user's private journal reflection and chat thread",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "mood": { "type": "string" },
+        "tags": { "type": "array" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "summary": { "type": "string" },
+        "sentiment": { "type": "string" },
+        "messages": { "type": "array" },
+        "extractedTasks": { "type": "array" },
+        "extractedEvents": { "type": "array" },
+        "extractedDeadlines": { "type": "array" },
+        "timezone": { "type": "string" },
+        "embedding": { "type": "array" }
+      },
+      "required": ["id", "userId", "createdAt", "updatedAt"]
+    },
+    "JournalMemory": {
+      "title": "Journal Memory",
+      "description": "Long-term AI memory unit storing complete journal entry text with semantic embedding",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "entryId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "summary": { "type": "string" },
+        "mood": { "type": "string" },
+        "tags": { "type": "array" },
+        "createdAt": { "type": "number" },
+        "embedding": { "type": "array" }
+      },
+      "required": ["id", "userId", "entryId", "title", "createdAt"]
+    },
+    "TaskItem": {
+      "title": "Task Item",
+      "description": "An actionable user task with priority, category, and due date",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "priority": { "type": "string" },
+        "category": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "estimatedMinutes": { "type": "number" },
+        "completed": { "type": "boolean" },
+        "completedAt": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "source": { "type": "string" },
+        "subtasks": { "type": "array" }
+      },
+      "required": ["id", "userId", "title", "createdAt"]
+    },
+    "DailyPlan": {
+      "title": "Daily Plan",
+      "description": "Time-blocked daily schedule generated for a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "dateStr": { "type": "string" },
+        "blocks": { "type": "array" },
+        "summary": { "type": "string" },
+        "energyStrategy": { "type": "string" },
+        "totalFocusMinutes": { "type": "number" },
+        "totalBreakMinutes": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "dateStr", "createdAt"]
+    },
+    "FocusSession": {
+      "title": "Focus Session",
+      "description": "Logged focus block duration and completed task",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "durationMinutes": { "type": "number" },
+        "taskTitle": { "type": "string" },
+        "taskId": { "type": "string" },
+        "interrupted": { "type": "boolean" },
+        "notes": { "type": "string" },
+        "completedAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "durationMinutes", "completedAt"]
+    },
+    "DailyReview": {
+      "title": "Daily Review",
+      "description": "Morning kickoff brief or evening reflection review",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "dateStr": { "type": "string" },
+        "type": { "type": "string" },
+        "headline": { "type": "string" },
+        "summary": { "type": "string" },
+        "highlights": { "type": "array" },
+        "recommendations": { "type": "array" },
+        "productivityScore": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "dateStr", "type", "createdAt"]
+    },
+    "UserPreferences": {
+      "title": "User Preferences",
+      "description": "User profile, schedule, reminder, notification, and AI preferences",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "profileImage": { "type": "string" },
+        "language": { "type": "string" },
+        "timeFormat": { "type": "string" },
+        "timezone": { "type": "string" },
+        "dateFormat": { "type": "string" },
+        "weekStartsOn": { "type": "string" },
+        "firstDayOfWeek": { "type": "number" },
+        "defaultCalendarView": { "type": "string" },
+        "workingDays": { "type": "array" },
+        "workdayStart": { "type": "string" },
+        "workdayEnd": { "type": "string" },
+        "preferredFocusStart": { "type": "string" },
+        "preferredFocusEnd": { "type": "string" },
+        "preferredMeetingStart": { "type": "string" },
+        "preferredMeetingEnd": { "type": "string" },
+        "defaultTaskDuration": { "type": "number" },
+        "defaultBreakDuration": { "type": "number" },
+        "travelBufferMinutes": { "type": "number" },
+        "defaultReminderMinutesBefore": { "type": "number" },
+        "customReminderTimes": { "type": "array" },
+        "snoozeDurationMinutes": { "type": "number" },
+        "recurringRemindersEnabled": { "type": "boolean" },
+        "deadlineRemindersEnabled": { "type": "boolean" },
+        "notificationsEnabled": { "type": "boolean" },
+        "quietHoursEnabled": { "type": "boolean" },
+        "quietHoursStart": { "type": "string" },
+        "quietHoursEnd": { "type": "string" },
+        "meetingProtection": { "type": "boolean" },
+        "focusModeProtection": { "type": "boolean" },
+        "urgentExceptions": { "type": "boolean" },
+        "soundPreference": { "type": "string" },
+        "vibrationPreference": { "type": "boolean" },
+        "priorityThreshold": { "type": "string" },
+        "aiPlanningEnabled": { "type": "boolean" },
+        "automaticRescheduling": { "type": "boolean" },
+        "askBeforeChangingSchedule": { "type": "boolean" },
+        "aiMemoryEnabled": { "type": "boolean" },
+        "aiSuggestionsEnabled": { "type": "boolean" },
+        "planningStyle": { "type": "string" },
+        "permissionCalendar": { "type": "boolean" },
+        "permissionLocation": { "type": "boolean" },
+        "permissionWeather": { "type": "boolean" },
+        "permissionSearch": { "type": "boolean" },
+        "permissionNotifications": { "type": "boolean" },
+        "permissionAiMemory": { "type": "boolean" },
+        "locationCity": { "type": "string" },
+        "focusDurationMinutes": { "type": "number" },
+        "breakDurationMinutes": { "type": "number" },
+        "energyPacing": { "type": "string" }
+      }
+    },
+    "CalendarEvent": {
+      "title": "Calendar Event",
+      "description": "User calendar event with recurrence, reminders, and priority",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "location": { "type": "string" },
+        "priority": { "type": "string" },
+        "repeat": { "type": "object" },
+        "reminder": { "type": "array" },
+        "color": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "seriesId": { "type": "string" },
+        "recurrenceId": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "date", "startTime", "endTime", "createdAt", "updatedAt"]
+    },
+    "NotificationItem": {
+      "title": "Smart Notification",
+      "description": "Context-aware reminder and alert for events, tasks, and deadlines",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "scheduledAt": { "type": "number" },
+        "priority": { "type": "string" },
+        "relatedTaskId": { "type": "string" },
+        "relatedEventId": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "readAt": { "type": "number" },
+        "snoozedUntil": { "type": "number" },
+        "delayedReason": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "scheduledAt", "priority", "status", "createdAt"]
+    },
+    "GoogleIntegrationMetadata": {
+      "title": "Google Integration Metadata",
+      "description": "Metadata tracking connected Google Calendar and Gmail sync status",
+      "type": "object",
+      "properties": {
+        "calendarConnected": { "type": "boolean" },
+        "gmailConnected": { "type": "boolean" },
+        "email": { "type": "string" },
+        "lastSyncedAt": { "type": "number" },
+        "calendarId": { "type": "string" },
+        "syncStatus": { "type": "string" },
+        "lastError": { "type": "string" },
+        "scopesGranted": { "type": "array" }
+      },
+      "required": ["calendarConnected", "gmailConnected", "syncStatus"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/entries/{entryId}": {
+      "schema": "JournalEntry",
+      "description": "User private journal entries and conversations"
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": "TaskItem",
+      "description": "User task items with priorities"
+    },
+    "/users/{userId}/plans/{planId}": {
+      "schema": "DailyPlan",
+      "description": "User time-blocked daily schedules"
+    },
+    "/users/{userId}/focusSessions/{sessionId}": {
+      "schema": "FocusSession",
+      "description": "Logged focus timer sessions"
+    },
+    "/users/{userId}/insights/{reviewId}": {
+      "schema": "DailyReview",
+      "description": "Morning briefs and evening reviews"
+    },
+    "/users/{userId}/preferences/settings": {
+      "schema": "UserPreferences",
+      "description": "User preferences and system settings"
+    },
+    "/users/{userId}/preferences/main": {
+      "schema": "UserPreferences",
+      "description": "Legacy user preferences sync"
+    },
+    "/users/{userId}/events/{eventId}": {
+      "schema": "CalendarEvent",
+      "description": "User calendar events and recurring series"
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": "NotificationItem",
+      "description": "Smart reminders and context-aware notifications"
+    },
+    "/users/{userId}/memories/{memoryId}": {
+      "schema": "JournalMemory",
+      "description": "User long-term memory embeddings for semantic journal retrieval"
+    },
+    "/users/{userId}/integrations/{integrationId}": {
+      "schema": "GoogleIntegrationMetadata",
+      "description": "User external integrations metadata such as Google Workspace"
+    }
+  }
+}

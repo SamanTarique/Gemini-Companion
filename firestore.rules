@@ -1,0 +1,297 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // 1. GLOBAL SAFETY NET: Default Deny All
+    // ==========================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ==========================================
+    // 2. HARDENED PRIMITIVES & IDENTITY HELPERS
+    // ==========================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerifiedUser(userId) {
+      return isOwner(userId);
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // ==========================================
+    // 3. ENTITY VALIDATION HELPERS
+    // ==========================================
+
+    function isValidJournalEntry(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+        data.userId == userId &&
+        data.createdAt is number && data.createdAt > 0 &&
+        data.updatedAt is number && data.updatedAt > 0 &&
+        (!('title' in data) || (data.title is string && data.title.size() <= 256)) &&
+        (!('content' in data) || (data.content is string && data.content.size() <= 50000)) &&
+        (!('mood' in data) || (data.mood in ['reflective', 'calm', 'focused', 'energized', 'creative', 'grateful', 'anxious'])) &&
+        (!('tags' in data) || (data.tags is list && data.tags.size() <= 50)) &&
+        (!('summary' in data) || (data.summary is string && data.summary.size() <= 4000)) &&
+        (!('sentiment' in data) || (data.sentiment is string && data.sentiment.size() <= 128)) &&
+        (!('timezone' in data) || (data.timezone is string && data.timezone.size() <= 64)) &&
+        (!('messages' in data) || (data.messages is list && data.messages.size() <= 500)) &&
+        (!('extractedTasks' in data) || (data.extractedTasks is list && data.extractedTasks.size() <= 100)) &&
+        (!('extractedEvents' in data) || (data.extractedEvents is list && data.extractedEvents.size() <= 100)) &&
+        (!('extractedDeadlines' in data) || (data.extractedDeadlines is list && data.extractedDeadlines.size() <= 100)) &&
+        (!('embedding' in data) || (data.embedding is list && data.embedding.size() <= 1536));
+    }
+
+    function isValidTaskItem(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+        data.userId == userId &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 256 &&
+        data.createdAt is number && data.createdAt > 0 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 4000)) &&
+        (!('priority' in data) || (data.priority in ['low', 'medium', 'high', 'critical'])) &&
+        (!('category' in data) || (data.category in ['work', 'personal', 'urgent', 'health', 'learning', 'errand'])) &&
+        (!('dueDate' in data) || (data.dueDate is string && data.dueDate.size() <= 32)) &&
+        (!('dueTime' in data) || (data.dueTime is string && data.dueTime.size() <= 16)) &&
+        (!('startTime' in data) || (data.startTime is string && data.startTime.size() <= 16)) &&
+        (!('endTime' in data) || (data.endTime is string && data.endTime.size() <= 16)) &&
+        (!('estimatedMinutes' in data) || (data.estimatedMinutes is number && data.estimatedMinutes >= 0 && data.estimatedMinutes <= 1440)) &&
+        (!('completed' in data) || (data.completed is bool)) &&
+        (!('completedAt' in data) || (data.completedAt is number)) &&
+        (!('subtasks' in data) || (data.subtasks is list && data.subtasks.size() <= 50)) &&
+        (!('tags' in data) || (data.tags is list && data.tags.size() <= 30)) &&
+        (!('googleMessageId' in data) || (data.googleMessageId is string && data.googleMessageId.size() <= 256)) &&
+        (!('source' in data) || (data.source is string && data.source.size() <= 64));
+    }
+
+    function isValidDailyPlan(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+        data.userId == userId &&
+        data.dateStr is string && data.dateStr.size() <= 16 &&
+        data.createdAt is number && data.createdAt > 0 &&
+        (!('blocks' in data) || (data.blocks is list && data.blocks.size() <= 100)) &&
+        (!('summary' in data) || (data.summary is string && data.summary.size() <= 3000)) &&
+        (!('energyStrategy' in data) || (data.energyStrategy is string && data.energyStrategy.size() <= 1000)) &&
+        (!('totalFocusMinutes' in data) || (data.totalFocusMinutes is number && data.totalFocusMinutes >= 0 && data.totalFocusMinutes <= 1440)) &&
+        (!('totalBreakMinutes' in data) || (data.totalBreakMinutes is number && data.totalBreakMinutes >= 0 && data.totalBreakMinutes <= 1440)) &&
+        (!('updatedAt' in data) || (data.updatedAt is number && data.updatedAt > 0));
+    }
+
+    function isValidFocusSession(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+        data.userId == userId &&
+        data.durationMinutes is number && data.durationMinutes >= 1 && data.durationMinutes <= 720 &&
+        data.completedAt is number && data.completedAt > 0 &&
+        (!('taskTitle' in data) || (data.taskTitle is string && data.taskTitle.size() <= 256)) &&
+        (!('taskId' in data) || (data.taskId is string && data.taskId.size() <= 128)) &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000)) &&
+        (!('interrupted' in data) || (data.interrupted is bool));
+    }
+
+    function isValidDailyReview(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+        data.userId == userId &&
+        data.dateStr is string && data.dateStr.size() <= 32 &&
+        data.type in ['morning_brief', 'evening_review', 'daily_insight', 'weekly_insight'] &&
+        data.createdAt is number && data.createdAt > 0 &&
+        (!('headline' in data) || (data.headline is string && data.headline.size() <= 512)) &&
+        (!('summary' in data) || (data.summary is string && data.summary.size() <= 8000)) &&
+        (!('highlights' in data) || (data.highlights is list && data.highlights.size() <= 60)) &&
+        (!('recommendations' in data) || (data.recommendations is list && data.recommendations.size() <= 60)) &&
+        (!('productivityScore' in data) || (data.productivityScore is number && data.productivityScore >= 0 && data.productivityScore <= 100));
+    }
+
+    function isValidUserPreferences(data) {
+      return (!('name' in data) || (data.name is string && data.name.size() <= 128)) &&
+        (!('language' in data) || (data.language is string && data.language.size() <= 16)) &&
+        (!('timeFormat' in data) || (data.timeFormat in ['12h', '24h'])) &&
+        (!('timezone' in data) || (data.timezone is string && data.timezone.size() <= 64)) &&
+        (!('workingDays' in data) || (data.workingDays is list && data.workingDays.size() <= 7)) &&
+        (!('defaultTaskDuration' in data) || (data.defaultTaskDuration is number && data.defaultTaskDuration >= 5 && data.defaultTaskDuration <= 240)) &&
+        (!('defaultBreakDuration' in data) || (data.defaultBreakDuration is number && data.defaultBreakDuration >= 1 && data.defaultBreakDuration <= 120)) &&
+        (!('notificationsEnabled' in data) || (data.notificationsEnabled is bool)) &&
+        (!('aiMemoryEnabled' in data) || (data.aiMemoryEnabled is bool));
+    }
+
+    function isValidCalendarEvent(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+        data.userId == userId &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 256 &&
+        data.date is string && data.date.size() <= 16 &&
+        data.startTime is string && data.startTime.size() <= 16 &&
+        data.endTime is string && data.endTime.size() <= 16 &&
+        data.createdAt is number && data.createdAt > 0 &&
+        data.updatedAt is number && data.updatedAt > 0 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 4000)) &&
+        (!('location' in data) || (data.location is string && data.location.size() <= 256)) &&
+        (!('priority' in data) || (data.priority in ['low', 'medium', 'high', 'critical'])) &&
+        (!('reminder' in data) || (data.reminder is list && data.reminder.size() <= 10)) &&
+        (!('color' in data) || (data.color is string && data.color.size() <= 32)) &&
+        (!('googleEventId' in data) || (data.googleEventId is string && data.googleEventId.size() <= 256)) &&
+        (!('syncStatus' in data) || (data.syncStatus in ['synced', 'local', 'pending', 'error'])) &&
+        (!('lastSyncedAt' in data) || (data.lastSyncedAt is number)) &&
+        (!('htmlLink' in data) || (data.htmlLink is string && data.htmlLink.size() <= 1024));
+    }
+
+    function isValidNotificationItem(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+        data.userId == userId &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 300 &&
+        data.scheduledAt is number && data.scheduledAt > 0 &&
+        data.priority in ['low', 'normal', 'high', 'urgent'] &&
+        data.status in ['pending', 'unread', 'read', 'snoozed', 'dismissed'] &&
+        data.createdAt is number && data.createdAt > 0 &&
+        (!('message' in data) || (data.message is string && data.message.size() <= 2000)) &&
+        (!('relatedTaskId' in data) || (data.relatedTaskId is string && data.relatedTaskId.size() <= 128)) &&
+        (!('relatedEventId' in data) || (data.relatedEventId is string && data.relatedEventId.size() <= 128));
+    }
+
+    function isValidJournalMemory(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+        data.userId == userId &&
+        data.entryId is string && isValidId(data.entryId) &&
+        data.title is string && data.title.size() <= 256 &&
+        data.content is string && data.content.size() <= 50000 &&
+        data.createdAt is number && data.createdAt > 0 &&
+        (!('summary' in data) || (data.summary is string && data.summary.size() <= 4000)) &&
+        (!('mood' in data) || (data.mood is string && data.mood.size() <= 32)) &&
+        (!('tags' in data) || (data.tags is list && data.tags.size() <= 50)) &&
+        (!('embedding' in data) || (data.embedding is list && data.embedding.size() <= 1536));
+    }
+
+    // ==========================================
+    // 4. USER NAMESPACE & SUBCOLLECTIONS
+    // ==========================================
+    match /users/{userId} {
+      // User root document
+      allow get: if isVerifiedUser(userId);
+      allow create, update: if isVerifiedUser(userId) && isValidId(userId);
+      allow delete: if isVerifiedUser(userId);
+
+      // Journal Entries
+      match /entries/{entryId} {
+        allow get, delete: if isVerifiedUser(userId) && isValidId(entryId);
+        allow list: if isVerifiedUser(userId);
+        allow create: if isVerifiedUser(userId) && isValidId(entryId) && isValidJournalEntry(incoming(), userId);
+        allow update: if isVerifiedUser(userId) && isValidId(entryId) && isValidJournalEntry(incoming(), userId) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt;
+      }
+
+      // Tasks
+      match /tasks/{taskId} {
+        allow get, delete: if isVerifiedUser(userId) && isValidId(taskId);
+        allow list: if isVerifiedUser(userId);
+        allow create: if isVerifiedUser(userId) && isValidId(taskId) && isValidTaskItem(incoming(), userId);
+        allow update: if isVerifiedUser(userId) && isValidId(taskId) && isValidTaskItem(incoming(), userId) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt;
+      }
+
+      // Daily Plans
+      match /plans/{planId} {
+        allow get, delete: if isVerifiedUser(userId) && isValidId(planId);
+        allow list: if isVerifiedUser(userId);
+        allow create: if isVerifiedUser(userId) && isValidId(planId) && isValidDailyPlan(incoming(), userId);
+        allow update: if isVerifiedUser(userId) && isValidId(planId) && isValidDailyPlan(incoming(), userId) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt;
+      }
+
+      // Focus Sessions
+      match /focusSessions/{sessionId} {
+        allow get, delete: if isVerifiedUser(userId) && isValidId(sessionId);
+        allow list: if isVerifiedUser(userId);
+        allow create: if isVerifiedUser(userId) && isValidId(sessionId) && isValidFocusSession(incoming(), userId);
+        allow update: if isVerifiedUser(userId) && isValidId(sessionId) && isValidFocusSession(incoming(), userId) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId;
+      }
+
+      // Daily Reviews / Insights
+      match /insights/{reviewId} {
+        allow get, delete: if isVerifiedUser(userId) && isValidId(reviewId);
+        allow list: if isVerifiedUser(userId);
+        allow create: if isVerifiedUser(userId) && isValidId(reviewId) && isValidDailyReview(incoming(), userId);
+        allow update: if isVerifiedUser(userId) && isValidId(reviewId) && isValidDailyReview(incoming(), userId) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt;
+      }
+
+      // User Preferences
+      match /preferences/{prefId} {
+        allow get, delete: if isVerifiedUser(userId) && isValidId(prefId);
+        allow list: if isVerifiedUser(userId);
+        allow create, update: if isVerifiedUser(userId) && isValidId(prefId) && isValidUserPreferences(incoming());
+      }
+
+      // Calendar Events
+      match /events/{eventId} {
+        allow get, delete: if isVerifiedUser(userId) && isValidId(eventId);
+        allow list: if isVerifiedUser(userId);
+        allow create: if isVerifiedUser(userId) && isValidId(eventId) && isValidCalendarEvent(incoming(), userId);
+        allow update: if isVerifiedUser(userId) && isValidId(eventId) && isValidCalendarEvent(incoming(), userId) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt;
+      }
+
+      // Smart Notifications & Reminders
+      match /notifications/{notificationId} {
+        allow get, delete: if isVerifiedUser(userId) && isValidId(notificationId);
+        allow list: if isVerifiedUser(userId);
+        allow create: if isVerifiedUser(userId) && isValidId(notificationId) && isValidNotificationItem(incoming(), userId);
+        allow update: if isVerifiedUser(userId) && isValidId(notificationId) && isValidNotificationItem(incoming(), userId) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt;
+      }
+
+      // Long-Term Semantic Memories
+      match /memories/{memoryId} {
+        allow get, delete: if isVerifiedUser(userId) && isValidId(memoryId);
+        allow list: if isVerifiedUser(userId);
+        allow create: if isVerifiedUser(userId) && isValidId(memoryId) && isValidJournalMemory(incoming(), userId);
+        allow update: if isVerifiedUser(userId) && isValidId(memoryId) && isValidJournalMemory(incoming(), userId) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt;
+      }
+
+      // Legacy Interactions & Schedules
+      match /interactions/{interactionId} {
+        allow read, write: if isVerifiedUser(userId) && isValidId(interactionId);
+      }
+
+      match /schedules/{scheduleId} {
+        allow read, write: if isVerifiedUser(userId) && isValidId(scheduleId);
+      }
+
+      // External Services and Google Workspace Integrations
+      match /integrations/{integrationId} {
+        allow get, list, delete: if isOwner(userId) && isValidId(integrationId);
+        allow create, update: if isOwner(userId) && isValidId(integrationId);
+      }
+    }
+  }
+}

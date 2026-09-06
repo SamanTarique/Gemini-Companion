@@ -1,0 +1,11 @@
+{
+  "name": "Copy of Remixo Gemini-Companion",
+  "description": "Smart life companion and private AI journal where every thought finds clarity, turning reflections into insights and schedules.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

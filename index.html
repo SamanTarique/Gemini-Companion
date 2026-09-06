@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Copy of Remixo Gemini-Companion</title>
+    <meta name="description" content="Smart life companion and private AI journal where every thought finds clarity, turning reflections into insights and schedules." />
+    <meta property="og:title" content="Copy of Remixo Gemini-Companion" />
+    <meta property="og:description" content="Smart life companion and private AI journal where every thought finds clarity, turning reflections into insights and schedules." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      // Global error handling for sandboxed iframes & cross-origin script resilience
+      window.onerror = function (message, source, lineno, colno, error) {
+        if (message === 'Script error.' || message === 'Script error') {
+          console.warn('[Global] Suppressed cross-origin Script error from iframe:', { source, lineno, colno });
+          return true; // Suppress fatal reporting of cross-origin masked errors
+        }
+        return false;
+      };
+      window.addEventListener('unhandledrejection', function (event) {
+        if (event.reason && (event.reason.message === 'Script error.' || String(event.reason).includes('Script error'))) {
+          event.preventDefault();
+        }
+      });
+      // Filter harmless Vite HMR websocket reconnection noise in cloud sandboxes
+      (function() {
+        const origWarn = console.warn;
+        console.warn = function(...args) {
+          if (typeof args[0] === 'string' && (args[0].includes('failed to connect to websocket') || args[0].includes('[vite] failed to connect'))) {
+            return;
+          }
+          origWarn.apply(console, args);
+        };
+      })();
+    </script>
+  </head>
+  <body class="h-full bg-[#0A0A0A] text-zinc-100 font-sans antialiased selection:bg-zinc-800 selection:text-zinc-100">
+    <div id="root" class="h-full"></div>
+    <script type="module" crossorigin="anonymous" src="/src/main.tsx"></script>
+  </body>
+</html>
+
